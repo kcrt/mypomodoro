@@ -141,15 +141,19 @@ impl MyApp {
 
     fn play_bell_sound(&self) {
         if self.play_sound {
-            if let Ok(home_dir) = std::env::var("HOME") {
-                let audio_file_path = format!("{}/dotfiles/audio/done.m4a", home_dir);
-                let _ = std::process::Command::new("afplay")
-                    .arg("--volume")
-                    .arg("0.1")
-                    .arg(audio_file_path)
-                    .status(); // We use status() to wait for the command to finish and get its status, ignoring errors for now.
-            } else {
-                eprintln!("Failed to get HOME directory for sound playback.");
+            let bell_data = include_bytes!("../resources/bell.mp3");
+            
+            use std::io::Cursor;
+            use rodio::{Decoder, OutputStream, Sink};
+            
+            if let Ok((_stream, stream_handle)) = OutputStream::try_default() {
+                if let Ok(sink) = Sink::try_new(&stream_handle) {
+                    if let Ok(source) = Decoder::new(Cursor::new(bell_data)) {
+                        sink.append(source);
+                        sink.set_volume(0.1); // Set volume to 10%
+                        sink.sleep_until_end();
+                    }
+                }
             }
         }
     }

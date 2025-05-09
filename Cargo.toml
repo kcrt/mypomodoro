@@ -2,9 +2,36 @@
 name = "mypomodoro"
 version = "0.1.0"
 edition = "2024"
+description = "A Pomodoro timer application built with Rust and egui"
+authors = ["kcrt <kcrt@kcrt.net>"]
+
+[package.metadata.bundle]
+name = "MyPomodoro"
+identifier = "com.kcrt.mypomodoro"
+icon = ["icons/icon_32x32.png", "icons/icon_64x64.png", "icons/icon_128x128.png", "icons/icon_256x256.png"]
+version = "0.1.0"
+copyright = "Copyright (c) kcrt 2025. All rights reserved."
+category = "Productivity"
+short_description = "A Pomodoro timer application"
+long_description = """
+MyPomodoro is a simple Pomodoro timer application that helps you manage your time effectively.
+It features customizable work and break durations, visual timer display, and sound notifications.
+"""
+
+# macOS specific settings
+osx_frameworks = []
+osx_minimum_system_version = "10.13"
+
+# Windows specific settings
+windows_subsystem = "windows"
+windows_icon_path = "icons/icon_256x256.png"
+
+# Deb specific settings (for Linux)
+deb_depends = []
 
 [dependencies]
 chrono = "0.4.41"
 eframe = "0.31.1"
 egui = "0.31.1"
 env_logger = "0.11.8"
+rodio = "0.17.3"  # Cross-platform audio playback
