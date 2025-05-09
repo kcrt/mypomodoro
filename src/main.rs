@@ -1,23 +1,29 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use eframe::egui::{self, epaint::{PathShape, Shape, Stroke, PathStroke}, Pos2, Vec2, Color32, Align2, FontId}; // Removed PathStrokeKind, ColorMode
+use eframe::egui::{self, epaint::{PathShape, Shape, Stroke, PathStroke}, Pos2, Vec2, Color32, Align2, FontId, IconData}; // Removed ViewportCommand
 use chrono::{DateTime, Utc};
 use std::f32::consts::TAU;
 
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+
+    let app = MyApp::default();
+    let icon_size = 64; // Standard icon size
+    let initial_icon = app.render_icon_data(icon_size);
+
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([265.0, 380.0])
             .with_resizable(false)
-            .with_always_on_top(),
+            .with_always_on_top()
+            .with_icon(initial_icon), // Set the initial icon
         ..Default::default()
     };
     eframe::run_native(
         "My Pomodoro",
         options,
-        Box::new(|_cc| {
-            Ok(Box::<MyApp>::default())
+        Box::new(move |_cc| { // Move app into the closure
+            Ok(Box::new(app))
         }),
     )
 }
@@ -243,12 +249,80 @@ impl MyApp {
             ui.style().visuals.strong_text_color(),
         );
     }
+
+    fn render_icon_data(&self, size: u32) -> egui::IconData {
+        let mut pixels = vec![Color32::TRANSPARENT; (size * size) as usize];
+        let center_f = size as f32 / 2.0;
+        
+        // Proportions similar to draw_doughnut_timer
+        let path_radius = center_f * 0.8; // Radius of the center-line of the doughnut ring
+        let stroke_w = path_radius * 0.25; // Thickness of the doughnut ring
+
+        let total_duration_sec = self.get_current_phase_duration_minutes() * 60.0;
+        let remaining_duration_sec = self.get_remaining_time_minutes().max(0.0) * 60.0;
+        
+        let progress_ratio = if total_duration_sec > 0.0 {
+            (total_duration_sec - remaining_duration_sec) / total_duration_sec
+        } else {
+            0.0 // Avoid division by zero if duration is zero; show as 0% spent
+        };
+        let spent_angle_end = progress_ratio * TAU; // Angle covered by spent time
+        let start_angle_offset = -TAU / 4.0; // Start from the top (12 o'clock)
+
+        let mut remaining_color = match self.current_phase {
+            TimerPhase::Pomodoro => Color32::from_rgb(255, 70, 70),
+            TimerPhase::ShortBreak => Color32::from_rgb(70, 200, 70),
+            TimerPhase::LongBreak => Color32::from_rgb(70, 130, 255),
+        };
+
+        if self.timer_state == TimerState::Paused {
+            remaining_color = Color32::from_gray(150); // Dimmed color when paused
+        }
+        let spent_color = Color32::from_gray(80); // Darker gray for spent time
+
+        let outer_ring_radius_sq = (path_radius + stroke_w / 2.0).powi(2);
+        let inner_ring_radius_sq = (path_radius - stroke_w / 2.0).powi(2);
+
+        for y_idx in 0..size {
+            for x_idx in 0..size {
+                let (xf, yf) = (x_idx as f32 + 0.5, y_idx as f32 + 0.5); // Use pixel center
+                let dist_sq = (xf - center_f).powi(2) + (yf - center_f).powi(2);
+
+                if dist_sq <= outer_ring_radius_sq && dist_sq >= inner_ring_radius_sq {
+                    // Pixel is within the doughnut ring
+                    let mut angle = (yf - center_f).atan2(xf - center_f) - start_angle_offset;
+                    if angle < 0.0 {
+                        angle += TAU; // Normalize angle to 0..TAU relative to start_angle_offset
+                    }
+
+                    if angle < spent_angle_end {
+                        pixels[(y_idx * size + x_idx) as usize] = spent_color;
+                    } else {
+                        pixels[(y_idx * size + x_idx) as usize] = remaining_color;
+                    }
+                }
+            }
+        }
+
+        let rgba_data: Vec<u8> = pixels
+            .into_iter()
+            .flat_map(|c| [c.r(), c.g(), c.b(), c.a()])
+            .collect();
+
+        egui::IconData {
+            rgba: rgba_data,
+            width: size,
+            height: size,
+        }
+    }
 }
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        let remaining_time = self.get_remaining_time_minutes();
+        let remaining_time_seconds: i32 = (remaining_time * 60.0).round() as i32;
+        static mut LAST_REMAINING_TIME_SECONDS: i32 = 0;
         if self.timer_state == TimerState::Running {
-            let remaining_time = self.get_remaining_time_minutes();
             if remaining_time <= 0.0 {
                 // It's time!
                 self.play_bell_sound();
@@ -256,6 +330,15 @@ impl eframe::App for MyApp {
             }
         }
         ctx.request_repaint_after(std::time::Duration::from_millis(100));
+
+        // Update window icon (not supported on macOS currently)
+        if remaining_time_seconds != unsafe { LAST_REMAINING_TIME_SECONDS } {
+            unsafe { LAST_REMAINING_TIME_SECONDS = remaining_time_seconds; }
+            let icon_size = 64; // Must match the size used for initial_icon or be a desired dynamic size
+            let new_icon_data = self.render_icon_data(icon_size);
+            let icon_arc = std::sync::Arc::new(new_icon_data);
+            ctx.send_viewport_cmd(egui::ViewportCommand::Icon(Some(icon_arc)));
+        }
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("My Pomodoro");

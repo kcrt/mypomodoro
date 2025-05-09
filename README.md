@@ -1,6 +1,7 @@
 # MyPomodoro
 
 A simple Pomodoro timer application built with Rust and egui.
+![Screen shot](screenshot.png)
 
 ## Features
 
