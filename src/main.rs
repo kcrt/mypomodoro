@@ -200,11 +200,9 @@ impl MyApp {
         }
 
         let spent_color = Color32::from_gray(80); // Darker gray for spent time
-        let background_color = Color32::WHITE;
 
         // 1. Draw the spent time track (full circle with spent_color)
         painter.circle_stroke(center, radius - stroke_width / 2.0, Stroke::new(stroke_width, spent_color));
-        painter.circle_stroke(center, radius - stroke_width / 2.0 * 3.0, Stroke::new(stroke_width, background_color));
 
         // 2. Draw the "remaining time" arc (on top of the background, starting where spent ended)
         if progress_ratio < 1.0 { // Only draw if there's time remaining
@@ -229,7 +227,7 @@ impl MyApp {
         let minutes = (remaining_duration_sec / 60.0).floor();
         let mut seconds = (remaining_duration_sec % 60.0).floor();
         if remaining_duration_sec > 0.0 && minutes == 0.0 && seconds == 0.0 {
-            // Avoid drawing "00:00" when time is up
+            // Avoid drawing "00:00" when timer is running
             seconds = 1.0;
         }
         let time_text = format!("{:02}:{:02}", minutes, seconds);
