@@ -7,7 +7,7 @@ authors = ["kcrt <kcrt@kcrt.net>"]
 
 [package.metadata.bundle]
 name = "MyPomodoro"
-identifier = "com.kcrt.mypomodoro"
+identifier = "net.kcrt.mypomodoro"
 icon = ["icons/icon_32x32.png", "icons/icon_64x64.png", "icons/icon_128x128.png", "icons/icon_256x256.png"]
 version = "0.1.0"
 copyright = "Copyright (c) kcrt 2025. All rights reserved."

@@ -94,3 +94,7 @@ To build for all supported platforms:
 ## Cross-Platform Audio
 
 The application uses the `rodio` crate for cross-platform audio playback, ensuring sound notifications work consistently across different operating systems.
+
+## Thanks to
+  * Sound of bell: [Springin' Sound Stock] (https://www.springin.org/sound-stock/
+)
