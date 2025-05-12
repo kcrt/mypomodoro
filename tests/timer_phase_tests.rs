@@ -1,6 +1,4 @@
-use chrono::{DateTime, Utc};
-
-use mypomodoro::{MyApp, TimerState, TimerPhase};
+use mypomodoro::{MyApp, TimerPhase};
 
 #[test]
 fn test_next_phase_from_pomodoro() {

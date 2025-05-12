@@ -1,7 +1,6 @@
-use chrono::{DateTime, Utc};
 use std::time::Duration;
 
-use mypomodoro::{MyApp, TimerState, TimerPhase};
+use mypomodoro::MyApp;
 
 #[test]
 fn test_get_spent_time_minutes_when_stopped() {

@@ -35,9 +35,8 @@ pub struct MyApp {
 
 impl Default for MyApp {
     fn default() -> Self {
-        let pomodoro_duration_minutes = 25.0;
         Self {
-            pomodoro_min: pomodoro_duration_minutes,
+            pomodoro_min: 25.0,
             short_break_min: 5.0,
             cycles: 4,
             long_break_min: 15.0,
@@ -109,17 +108,18 @@ impl MyApp {
         }
     }
 
+    /// Returns the time spent in the current phase in minutes, ignoring any pauses.
     pub fn get_spent_time_minutes(&self) -> f32 {
-        if let Some(phase_start_time_actual) = self.phase_start_time {
+        if let Some(phase_start_time) = self.phase_start_time {
             if self.timer_state == TimerState::Paused {
-                if let Some(current_pause_start_time) = self.pause_start_time {
-                    let elapsed_duration_until_current_pause = current_pause_start_time.signed_duration_since(phase_start_time_actual).num_milliseconds() as f32 / 60_000.0;
-                    return elapsed_duration_until_current_pause - self.pause_delta_min;
+                if let Some(pause_start_time) = self.pause_start_time {
+                    let elapsed_duration = pause_start_time.signed_duration_since(phase_start_time).num_milliseconds() as f32 / 60_000.0;
+                    return elapsed_duration - self.pause_delta_min;
                 } else {
                     return 0.0;
                 }
             } else {
-                let elapsed_total = Utc::now().signed_duration_since(phase_start_time_actual).num_milliseconds() as f32 / 60_000.0;
+                let elapsed_total = Utc::now().signed_duration_since(phase_start_time).num_milliseconds() as f32 / 60_000.0;
                 return elapsed_total - self.pause_delta_min;
             }
         }
@@ -129,7 +129,7 @@ impl MyApp {
     pub fn get_remaining_time_minutes(&self) -> f32 {
         let spent_time = self.get_spent_time_minutes();
         let total_duration = self.get_current_phase_duration_minutes();
-        total_duration - spent_time // could be negative if time is up
+        total_duration - spent_time
     }
 
     pub fn begin_timer(&mut self) {
@@ -194,7 +194,7 @@ impl MyApp {
                 self.current_cycle += 1;
                 if self.current_cycle >= self.cycles {
                     next_phase = TimerPhase::LongBreak;
-                    self.current_cycle = 0; // Reset for next set of cycles
+                    self.current_cycle = 0;
                 } else {
                     next_phase = TimerPhase::ShortBreak;
                 }
@@ -331,16 +331,14 @@ impl MyApp {
 }
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let remaining_time = self.get_remaining_time_minutes();
         let remaining_time_seconds: i32 = (remaining_time * 60.0).round() as i32;
         static mut LAST_REMAINING_TIME_SECONDS: i32 = 0;
-        if self.timer_state == TimerState::Running {
-            if remaining_time <= 0.0 {
-                // It's time!
-                self.play_bell_sound();
-                self.next_phase();
-            }
+        if self.timer_state == TimerState::Running && remaining_time <= 0.0 {
+            // It's time!
+            self.play_bell_sound();
+            self.next_phase();
         }
         ctx.request_repaint_after(std::time::Duration::from_millis(100));
 
@@ -405,4 +403,3 @@ impl eframe::App for MyApp {
         });
     }
 }
-
