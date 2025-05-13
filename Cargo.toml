@@ -1,14 +1,14 @@
 [package]
 name = "mypomodoro"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 description = "A Pomodoro timer application built with Rust and egui"
 authors = ["kcrt <kcrt@kcrt.net>"]
 
 [package.metadata.bundle]
 name = "MyPomodoro"
 identifier = "net.kcrt.mypomodoro"
-icon = ["icons/icon_32x32.png", "icons/icon_64x64.png", "icons/icon_128x128.png", "icons/icon_256x256.png"]
+icon = ["icons/icon.ico", "icons/icon_32x32.png", "icons/icon_64x64.png", "icons/icon_128x128.png", "icons/icon_256x256.png"]
 version = "0.1.0"
 copyright = "Copyright (c) kcrt 2025. All rights reserved."
 category = "Productivity"
@@ -24,7 +24,7 @@ osx_minimum_system_version = "10.13"
 
 # Windows specific settings
 windows_subsystem = "windows"
-windows_icon_path = "icons/icon_256x256.png"
+windows_icon_path = "icons/icon.ico"
 
 # Deb specific settings (for Linux)
 deb_depends = []
