@@ -164,6 +164,7 @@ impl MyApp {
         self.current_phase = phase;
         self.phase_start_time = Some(Utc::now());
         self.pause_delta_min = 0.0;
+        self.pause_start_time = None;
     }
     
     pub fn pause_timer(&mut self) {
@@ -233,6 +234,37 @@ impl MyApp {
             }
         }
         self.begin_phase(next_phase);
+    }
+
+    /// Skips the current phase and moves to the next phase
+    pub fn skip_phase(&mut self) {
+        if self.timer_state != TimerState::Stopped {
+            self.next_phase();
+        }
+    }
+
+    /// Skips the current cycle and moves to the next cycle
+    pub fn skip_cycle(&mut self) {
+        if self.timer_state != TimerState::Stopped {
+            match self.current_phase {
+                TimerPhase::Pomodoro => {
+                    self.current_cycle += 1;
+                    if self.current_cycle >= self.cycles {
+                        self.current_cycle = 0;
+                        self.begin_phase(TimerPhase::LongBreak);
+                    } else {
+                        self.begin_phase(TimerPhase::Pomodoro);
+                    }
+                }
+                TimerPhase::ShortBreak => {
+                    self.begin_phase(TimerPhase::Pomodoro);
+                }
+                TimerPhase::LongBreak => {
+                    self.current_cycle = 0;
+                    self.begin_phase(TimerPhase::Pomodoro);
+                }
+            }
+        }
     }
 
     /// Draws a doughnut-style timer visualization showing progress of the current phase.
@@ -441,12 +473,31 @@ impl MyApp {
             });
             
             let pause_resume_text = if self.timer_state == TimerState::Paused { "Resume" } else { "Pause" };
-            if ui.add_enabled(self.timer_state != TimerState::Stopped, egui::Button::new(pause_resume_text)).clicked() {
+            let pause_resume_button_response = ui.add_enabled(self.timer_state != TimerState::Stopped, egui::Button::new(pause_resume_text));
+            
+            // Handle left click for pause/resume
+            if pause_resume_button_response.clicked() {
                 if self.timer_state == TimerState::Running {
                     self.pause_timer();
                 } else {
                     self.resume_timer();
                 }
+            }
+            
+            // Handle right click context menu only for Resume button (when paused)
+            if self.timer_state == TimerState::Paused {
+                pause_resume_button_response.context_menu(|ui| {
+                    ui.label("Skip options:");
+                    ui.separator();
+                    
+                    if ui.button("⏭️ Skip this phase").clicked() {
+                        self.skip_phase();
+                        ui.close_menu();
+                    }else if ui.button("⏩ Skip this cycle").clicked() {
+                        self.skip_cycle();
+                        ui.close_menu();
+                    }
+                });
             }
             if ui.button("Reset").clicked() {
                 self.reset_timer();
