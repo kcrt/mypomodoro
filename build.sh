@@ -6,6 +6,7 @@ usage() {
     echo "Options:"
     echo "  --windows    Build Windows executable bundle (.exe)"
     echo "  --macos      Build macOS application bundle (.app)"
+    echo "  --install    Build and install macOS app to /Applications (macOS only)"
     echo "  --all        Build for all platforms"
     echo "  --help       Display this help message"
     exit 1
@@ -22,6 +23,7 @@ fi
 
 BUILD_WINDOWS=false
 BUILD_MACOS=false
+INSTALL_MACOS=false
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -30,6 +32,14 @@ while [ $# -gt 0 ]; do
             ;;
         --macos)
             BUILD_MACOS=true
+            ;;
+        --install)
+            if [[ "$OSTYPE" != "darwin"* ]]; then
+                echo "Error: --install option is only supported on macOS"
+                exit 1
+            fi
+            BUILD_MACOS=true
+            INSTALL_MACOS=true
             ;;
         --all)
             BUILD_WINDOWS=true
@@ -70,6 +80,25 @@ if [ "$BUILD_MACOS" = true ]; then
         cargo bundle --release --target x86_64-apple-darwin --format osx
     fi
     echo "macOS build completed. Check the 'target/release/bundle/osx/' directory."
+    
+    if [ "$INSTALL_MACOS" = true ]; then
+        echo "Installing MyPomodoro.app to /Applications..."
+        APP_PATH="target/release/bundle/osx/MyPomodoro.app"
+        if [ -d "$APP_PATH" ]; then
+            # Remove existing installation if it exists
+            if [ -d "/Applications/MyPomodoro.app" ]; then
+                echo "Removing existing installation..."
+                rm -rf "/Applications/MyPomodoro.app"
+            fi
+            
+            # Copy the new app to /Applications
+            cp -r "$APP_PATH" "/Applications/"
+            echo "Successfully installed MyPomodoro.app to /Applications"
+        else
+            echo "Error: Built application not found at $APP_PATH"
+            exit 1
+        fi
+    fi
 fi
 
 echo "Build process completed!"
