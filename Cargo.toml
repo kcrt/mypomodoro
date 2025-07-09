@@ -1,6 +1,6 @@
 [package]
 name = "mypomodoro"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "A Pomodoro timer application built with Rust and egui"
 authors = ["kcrt <kcrt@kcrt.net>"]
@@ -9,7 +9,7 @@ authors = ["kcrt <kcrt@kcrt.net>"]
 name = "MyPomodoro"
 identifier = "net.kcrt.mypomodoro"
 icon = ["icons/icon.ico", "icons/icon_32x32.png", "icons/icon_64x64.png", "icons/icon_128x128.png", "icons/icon_256x256.png"]
-version = "0.1.0"
+version = "0.1.1"
 copyright = "Copyright (c) kcrt 2025. All rights reserved."
 category = "Productivity"
 short_description = "A Pomodoro timer application"
