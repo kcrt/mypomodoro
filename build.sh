@@ -57,18 +57,16 @@ while [ $# -gt 0 ]; do
 done
 
 if [ "$BUILD_WINDOWS" = true ]; then
-    echo "Building Windows executable bundle..."
+    echo "Building Windows executable..."
     if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
         cargo build --release
-        cargo bundle --release --format msi
     else
         echo "Cross-compiling for Windows..."
         echo "Note: This requires the appropriate cross-compilation toolchain."
         echo "If this fails, please build on a Windows machine or use a Windows VM."
         cargo build --release --target x86_64-pc-windows-gnu
-        cargo bundle --release --target x86_64-pc-windows-gnu --format msi
     fi
-    echo "Windows build completed. Check the 'target/release/bundle/msi/' directory."
+    echo "Windows build completed. Check the 'target/release/' directory."
 fi
 
 if [ "$BUILD_MACOS" = true ]; then
