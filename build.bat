@@ -12,7 +12,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 REM Build the Windows executable bundle
 echo Building Windows executable bundle...
-cargo bundle --format msi
+cargo bundle --release --format msi
 
 echo Build process completed!
 echo Check the 'target\release\bundle\msi\' directory for the installer.

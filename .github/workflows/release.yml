@@ -70,7 +70,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.asset_name }}
-        path: target/release/bundle/osx/MyPomodoro.app
+        path: target/release/bundle/osx/MyPomodoro.app/
 
     - name: Upload Linux artifact
       if: matrix.os == 'ubuntu-latest'
@@ -98,5 +98,5 @@ jobs:
         files: |
           ./artifacts/mypomodoro-linux-x86_64/mypomodoro
           ./artifacts/mypomodoro-windows-x86_64/*
-          ./artifacts/mypomodoro-macos-x86_64/MyPomodoro.app
-          ./artifacts/mypomodoro-macos-aarch64/MyPomodoro.app
+          ./artifacts/mypomodoro-macos-x86_64/*
+          ./artifacts/mypomodoro-macos-aarch64/*
