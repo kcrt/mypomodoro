@@ -12,6 +12,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 REM Build the Windows executable bundle
 echo Building Windows executable bundle...
+cargo build --release
 cargo bundle --release --format msi
 
 echo Build process completed!
