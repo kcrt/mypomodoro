@@ -1,6 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use eframe::egui::{self, epaint::{PathShape, Shape, Stroke, PathStroke}, Pos2, Vec2, Color32, Align2, FontId}; 
+mod app_icon;
+
+use eframe::egui::{self, epaint::{PathShape, Shape, Stroke, PathStroke}, Pos2, Vec2, Color32, Align2, FontId};
 use chrono::{DateTime, Utc};
 use std::f32::consts::TAU;
 
@@ -328,18 +330,18 @@ impl MyApp {
         );
     }
 
-    /// Renders the timer progress as an icon for the window titlebar.
-    /// Returns icon data showing the current phase progress as a doughnut shape.
+    /// Renders the timer progress as an icon for the window titlebar and dock/taskbar.
+    /// Returns icon data showing the current phase progress as a doughnut shape with time text.
     pub fn render_icon_data(&self, size: u32) -> egui::IconData {
         let mut pixels = vec![Color32::TRANSPARENT; (size * size) as usize];
         let center_f = size as f32 / 2.0;
-        
+
         let path_radius = center_f * RADIUS_SCALE; // Radius of the center-line of the doughnut ring
         let stroke_w = path_radius * STROKE_WIDTH_RATIO; // Thickness of the doughnut ring
 
         let total_duration_sec = self.get_current_phase_duration_minutes() * SECONDS_PER_MINUTE;
         let remaining_duration_sec = self.get_remaining_time_minutes().max(0.0) * SECONDS_PER_MINUTE;
-        
+
         let progress_ratio = if total_duration_sec > 0.0 {
             (total_duration_sec - remaining_duration_sec) / total_duration_sec
         } else {
@@ -362,6 +364,7 @@ impl MyApp {
         let outer_ring_radius_sq = (path_radius + stroke_w / 2.0).powi(2);
         let inner_ring_radius_sq = (path_radius - stroke_w / 2.0).powi(2);
 
+        // Draw the doughnut ring
         for y_idx in 0..size {
             for x_idx in 0..size {
                 let (xf, yf) = (x_idx as f32 + 0.5, y_idx as f32 + 0.5); // Use pixel center
@@ -382,6 +385,23 @@ impl MyApp {
             }
         }
 
+        // Render time text in the center
+        let minutes = (remaining_duration_sec / SECONDS_PER_MINUTE).floor() as u32;
+        let mut seconds = (remaining_duration_sec % SECONDS_PER_MINUTE).floor() as u32;
+        if remaining_duration_sec > 0.0 && minutes == 0 && seconds == 0 {
+            seconds = 1;
+        }
+
+        // Format time: show minutes for >60s, show :seconds for <=60s
+        let time_text = if remaining_duration_sec > SECONDS_PER_MINUTE {
+            format!("{}", minutes)
+        } else {
+            format!(":{:02}", seconds)
+        };
+
+        // Draw text on the icon with black color
+        Self::draw_text_on_icon(&mut pixels, size, &time_text, Color32::BLACK);
+
         let rgba_data: Vec<u8> = pixels
             .into_iter()
             .flat_map(|c| [c.r(), c.g(), c.b(), c.a()])
@@ -391,6 +411,50 @@ impl MyApp {
             rgba: rgba_data,
             width: size,
             height: size,
+        }
+    }
+
+    /// Draw text on the icon using imageproc and ab_glyph
+    fn draw_text_on_icon(pixels: &mut [Color32], size: u32, text: &str, color: Color32) {
+        use ab_glyph::{FontVec, PxScale, Font, ScaleFont};
+        use image::{Rgba, RgbaImage};
+        use imageproc::drawing::draw_text_mut;
+
+        // Convert pixels to RgbaImage
+        let rgba_bytes: Vec<u8> = pixels.iter()
+            .flat_map(|c| [c.r(), c.g(), c.b(), c.a()])
+            .collect();
+
+        let mut img = RgbaImage::from_vec(size, size, rgba_bytes)
+            .expect("Failed to create image from pixels");
+
+        // Use DejaVu Sans Mono font (free and open source, Bitstream Vera license)
+        let font_data = include_bytes!("../resources/DejaVuSansMono.ttf");
+        let font = FontVec::try_from_vec(font_data.to_vec())
+            .expect("Failed to load font");
+
+        // Calculate font size
+        let font_size = size as f32 / 3.2;
+        let scale = PxScale::from(font_size);
+
+        // Properly calculate text width using glyph metrics
+        let scaled_font = font.as_scaled(scale);
+        let mut text_width = 0.0f32;
+        for c in text.chars() {
+            let glyph_id = scaled_font.glyph_id(c);
+            text_width += scaled_font.h_advance(glyph_id);
+        }
+
+        // Center the text
+        let x = ((size as f32 - text_width) / 2.0) as i32;
+        let y = ((size as f32 - font_size) / 2.0) as i32;
+
+        let rgba_color = Rgba([color.r(), color.g(), color.b(), color.a()]);
+        draw_text_mut(&mut img, rgba_color, x, y, scale, &font, text);
+
+        // Convert back to pixels
+        for (i, pixel) in img.pixels().enumerate() {
+            pixels[i] = Color32::from_rgba_unmultiplied(pixel[0], pixel[1], pixel[2], pixel[3]);
         }
     }
 }
@@ -409,12 +473,23 @@ impl MyApp {
     fn update_window_icon(&mut self, ctx: &egui::Context) {
         let remaining_time = self.get_remaining_time_minutes();
         let remaining_time_seconds: i32 = (remaining_time * SECONDS_PER_MINUTE).round() as i32;
-        
+
         if remaining_time_seconds != self.last_remaining_time_seconds {
+            log::info!(
+                "Window icon update: {}:{:02} remaining (phase: {:?}, state: {:?})",
+                remaining_time_seconds / 60,
+                remaining_time_seconds % 60,
+                self.current_phase,
+                self.timer_state
+            );
             self.last_remaining_time_seconds = remaining_time_seconds;
             let new_icon_data = self.render_icon_data(ICON_SIZE);
-            let icon_arc = std::sync::Arc::new(new_icon_data);
-            ctx.send_viewport_cmd(egui::ViewportCommand::Icon(Some(icon_arc)));
+
+            // Use platform-specific API to set dock/taskbar icon
+            app_icon::set_app_icon(&new_icon_data);
+
+            // Also send viewport command for window icon (title bar)
+            ctx.send_viewport_cmd(egui::ViewportCommand::Icon(Some(std::sync::Arc::new(new_icon_data))));
         }
     }
     

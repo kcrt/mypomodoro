@@ -7,6 +7,7 @@ A simple Pomodoro timer application built with Rust and egui.
 
 - Customizable work and break durations
 - Visual timer display with doughnut-shaped progress indicator
+- Dynamic window icon that shows timer progress in dock/taskbar
 - Sound notifications when phases complete
 - Simple and intuitive interface
 
@@ -14,8 +15,8 @@ A simple Pomodoro timer application built with Rust and egui.
 
 ### Prerequisites
 
-- Rust and Cargo (https://www.rust-lang.org/tools/install)
-- cargo-bundle (`cargo install cargo-bundle`)
+- Rust and Cargo: <https://www.rust-lang.org/tools/install>
+- cargo-bundle: `cargo install cargo-bundle`
 
 ### Building for Windows
 
@@ -96,6 +97,47 @@ To build for all supported platforms:
 
 The application uses the `rodio` crate for cross-platform audio playback, ensuring sound notifications work consistently across different operating systems.
 
-## Thanks to
-  * Sound of bell: [Springin' Sound Stock] (https://www.springin.org/sound-stock/
-)
+## Development
+
+### Running with Logging
+
+The application uses the `log` crate for logging. To view logs during development or troubleshooting, set the `RUST_LOG` environment variable:
+
+```bash
+# Show all logs (info, debug, trace)
+RUST_LOG=debug cargo run
+
+# Show only info and warning logs
+RUST_LOG=info cargo run
+
+# Show logs from specific modules
+RUST_LOG=mypomodoro=debug cargo run
+```
+
+The application logs useful information including:
+
+- Icon updates (every second when timer is running)
+- Phase transitions (Pomodoro → Break, etc.)
+- Timer state changes (start, pause, resume, reset)
+
+### Running in Release Mode
+
+For better performance during development:
+
+```bash
+cargo run --release
+```
+
+## Licenses and Attribution
+
+### Third-Party Resources
+
+This application includes the following third-party resources:
+
+- **Sound effect**: Bell sound from [Springin' Sound Stock](https://www.springin.org/sound-stock/)
+- **Font**: DejaVu Sans Mono font
+  - Copyright: (c) 2003 by Bitstream, Inc. All Rights Reserved.
+  - Bitstream Vera is a trademark of Bitstream, Inc.
+  - License: [Bitstream Vera License / Arev Fonts License](https://dejavu-fonts.github.io/License.html)
+  - The DejaVu fonts are free software and may be redistributed and modified under the terms of the license.
+  - Source: [DejaVu Fonts Project](https://dejavu-fonts.github.io/)
